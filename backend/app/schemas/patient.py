@@ -6,6 +6,12 @@ from .address import AddressCreate, AddressResponse, AddressUpdate
 from .allergy import AllergyCreate
 from .condition import ConditionCreate
 
+def get_age(dob:date):
+    current = date.today()
+    return current.year - dob.year - ((current.month, current.day) < (dob.month, dob.day))
+
+
+
 class BloodTypeEnum(str, enum.Enum):
     A_POSITIVE = "A+"
     A_NEGATIVE = "A-"
@@ -21,24 +27,6 @@ class PatientStatus(str, enum.Enum):
     IN_ACTIVE = "inactive"
     DECEASED = "deceased"
 
-
-"""
-- `GET /patients` — List patients with pagination
-- `GET /patients/{id}` — Get a specific patient
-- `POST /patients` — Create a patient
-    **Tasks:**
-        1. **Build a patient form** with:
-            - Personal information (name, DOB, contact, address)
-            - Medical information (allergies, conditions, blood type, status)
-        2. **Implement form features**:
-            - Client-side and server-side validation
-            - Meaningful error messages displayed to the user
-        3. **Error handling** for:
-            - Network failures
-            - Validation errors
-- `PUT /patients/{id}` — Update a patient
-- `DELETE /patients/{id}` — Delete a patient
-"""
 
 class PatientBase(BaseModel):
     first_name:str
@@ -60,8 +48,7 @@ class PatientResponse(PatientBase):
     @computed_field
     @property
     def age(self) -> int:
-        current = date.today()
-        return current.year - self.dob.year - ((current.month, current.day) < (self.dob.month, self.dob.day))
+        return get_age(self.dob)
 
     model_config = {"from_attributes": True}
 

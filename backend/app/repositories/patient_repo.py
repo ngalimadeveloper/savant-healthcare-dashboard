@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session, joinedload
 from app.models.patient import Patient
-from app.models.patient_note import PatientNote
 
 """
 class PatientResponse(PatientBase):
@@ -27,21 +26,18 @@ class PatientRepository:
     def get_all_patients(self):
         return self.db.query(Patient).all()
     
-    def get_all_patient_notes(self):
-        return self.db.query(PatientNote).all()
-    
     """
     Need to optimize the search by name potentially? Would be good to show that it can maybe handle searching across 100,000 or something. 
     Also need to account for pagination too.
     """
 
-    def search_by_name(self, search_input:str):
+    def search_by_name(self, search_query:str):
         return ( 
             self.db.query(Patient)
             .filter(
-                Patient.first_name.ilike(f"%{search_input}%") |
-                Patient.middle_name.ilike(f"%{search_input}%") |
-                Patient.last_name.ilike(f"%{search_input}%")
+                Patient.first_name.ilike(f"%{search_query}%") |
+                Patient.middle_name.ilike(f"%{search_query}%") |
+                Patient.last_name.ilike(f"%{search_query}%")
             )
             .all()
         )
@@ -53,13 +49,22 @@ class PatientRepository:
                 .first()
         )
     
-    def get_patient_note_by_id(self, note_id:str):
+    def get_allergies_by_patient_id(self, patient_id:int):
         return (
-                self.db.query(PatientNote)
-                .filter(PatientNote.id == note_id)
-                .first()
+            self.db.query(Patient)
+            .options(joinedload(Patient.allergies))
+            .filter(Patient.id == patient_id)
+            .first()
         )
-
+    
+    def get_conditions_by_patient_id(self, patient_id:int):
+        return (
+            self.db.query(Patient)
+            .options(joinedload(Patient.conditions))
+            .filter(Patient.id == patient_id)
+            .first()
+        )
+    
     
     def create_patient(self, patient: Patient):
         self.db.add(patient)
@@ -67,12 +72,6 @@ class PatientRepository:
         self.db.refresh(patient)
         return patient
     
-    def create_patient_note(self, patient_note:PatientNote):
-        self.db.add(patient_note)
-        self.db.commit()
-        self.db.refresh(patient_note)
-        return patient_note
-
 
     def delete_patient(self, patient:Patient):
         self.db.delete(patient)
@@ -83,6 +82,7 @@ class PatientRepository:
         self.db.commit()
         self.db.refresh(patient)
         return patient
+    
     
 
 
