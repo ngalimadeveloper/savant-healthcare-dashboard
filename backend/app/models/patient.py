@@ -12,7 +12,7 @@ class Patient(Base):
     middle_name = Column(String(100), nullable=True)
     last_name = Column(String(100), nullable=False)
     dob = Column(Date, nullable=False)
-    blood_type = Column(String(3), nullable=False)
+    blood_type = Column(String(3), nullable=True)
     status = Column(String(10),default="active", nullable=False)
     last_visit= Column(Date, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
