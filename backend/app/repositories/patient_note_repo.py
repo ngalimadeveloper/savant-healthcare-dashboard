@@ -4,13 +4,13 @@ from app.models.patient_note import PatientNote
 
 class PatientNoteRepository:
     def __init__(self, db:Session):
-        self.db
+        self.db = db
  
     def get_note_by_id(self, note_id:int):
-        return self.db.query(PatientNote).filter(PatientNote.id == note_id)
+        return self.db.query(PatientNote).filter(PatientNote.id == note_id).first()
     
     def get_notes_by_patient_id(self, patient_id:int):
-        return self.db.query(PatientNote).filter(PatientNote.patient_id == patient_id)
+        return self.db.query(PatientNote).filter(PatientNote.patient_id == patient_id).all()
     
     
     def create_note(self, patient_note: PatientNote):

@@ -11,7 +11,7 @@ class ContactCreate(ContactBase):
     pass
 
 class ContactResponse(ContactBase):
-    id:str
+    id:int
 
     model_config = {"from_attributes": True}
 

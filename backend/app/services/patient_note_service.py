@@ -3,6 +3,7 @@ from app.repositories.patient_note_repo import PatientNoteRepository
 from app.models.patient_note import PatientNote
 from app.repositories.patient_repo import PatientRepository
 from app.schemas.patient_note import PatientNoteCreate
+from app.exceptions import NotFoundException, NotAuthorizedException
 
 
 class PatientNoteService:
@@ -14,18 +15,25 @@ class PatientNoteService:
     def get_notes_by_patient_id(self, patient_id:int):
         patient = self.patient_repo.get_patient_by_id(patient_id)
         if not patient:
-            raise #Patient not found error 
+            raise NotFoundException("Patient", patient_id)
         return self.patient_note_repo.get_notes_by_patient_id(patient_id)
     
     def create_note(self, patient_id:int, note_data:PatientNoteCreate):
         patient = self.patient_repo.get_patient_by_id(patient_id)
         if not patient:
-            raise #Patient not found error
+            raise NotFoundException("Patient", patient_id)
         note_data = PatientNote(patient_id=patient_id, **note_data.model_dump())
         return self.patient_note_repo.create_note(note_data)
 
-    def delete_note(self, note_id:int):
+    def delete_note(self, patient_id:int, note_id:int):
+        patient = self.patient_repo.get_patient_by_id(patient_id)
+        if not patient:
+            raise NotFoundException("Patient", patient_id)
+        
         patient_note = self.patient_note_repo.get_note_by_id(note_id)
         if not patient_note:
-            raise ## Patient note not found error
+            raise NotFoundException("Patient Note", note_id)
+        
+        if patient_note.patient_id != patient.id:
+            raise NotAuthorizedException("Patient Note", note_id)
         return self.patient_note_repo.delete_note(patient_note)

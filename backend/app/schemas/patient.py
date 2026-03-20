@@ -1,10 +1,11 @@
 import enum
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, field_validator
 from datetime import datetime, date
 from .contact import ContactCreate, ContactResponse, ContactUpdate
 from .address import AddressCreate, AddressResponse, AddressUpdate
 from .allergy import AllergyCreate
 from .condition import ConditionCreate
+from typing import List
 
 def get_age(dob:date):
     current = date.today()
@@ -40,7 +41,7 @@ class PatientBase(BaseModel):
 
 class PatientResponse(PatientBase):
     id:int
-    last_visit: datetime
+    last_visit: datetime | None
     created_at:datetime
     address: AddressResponse
     contact: ContactResponse
@@ -69,8 +70,8 @@ class PatientUpdate(BaseModel):
 class PatientCreate(PatientBase):
     contact:ContactCreate
     address:AddressCreate
-    allergies:list[AllergyCreate] = []
-    conditions: list[ConditionCreate] = []
+    allergies:List[AllergyCreate] = []
+    conditions: List[ConditionCreate] = []
 
 
 

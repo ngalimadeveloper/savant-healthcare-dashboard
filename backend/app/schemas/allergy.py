@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-import datetime
+from datetime import datetime
 
 class AllergyBase(BaseModel):
     allergy_name:str

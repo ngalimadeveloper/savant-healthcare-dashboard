@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
 from app.models.patient import Patient
+from app.models.contact import Contact
 
 """
 class PatientResponse(PatientBase):
@@ -21,7 +22,7 @@ class PatientResponse(PatientBase):
 
 class PatientRepository:
     def __init__(self, db:Session):
-        self.db
+        self.db = db
     
     def get_all_patients(self):
         return self.db.query(Patient).all()
@@ -31,7 +32,7 @@ class PatientRepository:
     Also need to account for pagination too.
     """
 
-    def search_by_name(self, search_query:str):
+    def search_by_patient_name(self, search_query:str):
         return ( 
             self.db.query(Patient)
             .filter(
@@ -46,6 +47,14 @@ class PatientRepository:
                 self.db.query(Patient)
                 .options(joinedload(Patient.contact), joinedload(Patient.address))
                 .filter(Patient.id == patient_id)
+                .first()
+        )
+
+    def get_patient_by_email(self, email:str):
+        return ( 
+                self.db.query(Patient)
+                .filter(Patient.contact.has(email=email))
+                .join(Contact, Contact.patient_id == Patient.id)
                 .first()
         )
     

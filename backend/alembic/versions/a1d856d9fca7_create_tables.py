@@ -1,8 +1,8 @@
-"""create all tables
+"""create_tables
 
-Revision ID: 4c092b188808
+Revision ID: a1d856d9fca7
 Revises: 
-Create Date: 2026-03-17 20:04:15.995869
+Create Date: 2026-03-18 17:50:27.192053
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '4c092b188808'
+revision: str = 'a1d856d9fca7'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -27,7 +27,7 @@ def upgrade() -> None:
     sa.Column('middle_name', sa.String(length=100), nullable=True),
     sa.Column('last_name', sa.String(length=100), nullable=False),
     sa.Column('dob', sa.Date(), nullable=False),
-    sa.Column('blood_type', sa.String(length=3), nullable=False),
+    sa.Column('blood_type', sa.String(length=3), nullable=True),
     sa.Column('status', sa.String(length=10), nullable=False),
     sa.Column('last_visit', sa.Date(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
@@ -52,6 +52,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('patient_id', sa.Integer(), nullable=False),
     sa.Column('allergy_name', sa.String(length=255), nullable=False),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['patient_id'], ['patients.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('patient_id', 'allergy_name', name='uq_patient_allergy')
@@ -61,6 +62,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('patient_id', sa.Integer(), nullable=False),
     sa.Column('condition_name', sa.String(length=255), nullable=False),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['patient_id'], ['patients.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('patient_id', 'condition_name', name='uq_patient_condition')
@@ -80,7 +82,7 @@ def upgrade() -> None:
     op.create_table('patientnotes',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('patient_id', sa.Integer(), nullable=False),
-    sa.Column('text', sa.String(), nullable=False),
+    sa.Column('text', sa.Text(), nullable=False),
     sa.Column('timestamp', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['patient_id'], ['patients.id'], ),
     sa.PrimaryKeyConstraint('id')
