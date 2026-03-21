@@ -1,4 +1,4 @@
-// src/pages/ManagePatients.tsx
+
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useInView } from "react-intersection-observer";

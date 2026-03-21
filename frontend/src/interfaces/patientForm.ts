@@ -1,4 +1,4 @@
-// src/interfaces/patientForm.ts
+
 export interface PatientFormData {
   first_name: string;
   middle_name: string | null;

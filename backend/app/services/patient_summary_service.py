@@ -28,7 +28,7 @@ class PatientSummaryService:
         conditions = [c.condition_name for c in patient.conditions]
         full_name = f"{patient.first_name} {patient.middle_name + ' ' if patient.middle_name else ''}{patient.last_name}"
 
-        notes_summary = await self.generate_notes_summary(patient_notes, full_name, allergies, conditions)
+        notes_summary = await self.generate_notes_summary(patient_notes)
 
         return PatientSummaryResponse(
             full_name=full_name,
@@ -39,11 +39,9 @@ class PatientSummaryService:
             notes_summary=notes_summary,
         )
 
-    async def generate_notes_summary(self, patient_notes: List[PatientNote], full_name: str, allergies: List[str], conditions: List[str]) -> str:
+    async def generate_notes_summary(self, patient_notes: List[PatientNote]) -> str:
         if not patient_notes:
             return "No notes have been recorded for this patient yet."
-
-        fallback = f"Patient: {full_name}. Conditions: {', '.join(conditions) or 'None'}. Allergies: {', '.join(allergies) or 'None'}."
 
         notes_input = json.dumps({"notes": [note.text for note in patient_notes]})
 
@@ -56,4 +54,4 @@ class PatientSummaryService:
             return response.output_text
         except Exception as e:
             print(f"[PatientSummaryService] Failed to generate summary: {e}")
-            return fallback
+            return "Summary service is down, try again later."

@@ -1,4 +1,4 @@
-// src/pages/PatientView.tsx
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useInView } from "react-intersection-observer";
@@ -96,7 +96,7 @@ export function PatientView() {
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Notes Summary</p>
           <p className="text-sm text-gray-700 whitespace-pre-line">
-            {isLoadingSummary ? "Generating summary..." : patientSummary?.notes_summary ?? "No summary available."}
+            {isLoadingSummary ? "Generating summary..." : patientSummary?.notes_summary ?? "Summary service is down, try again later."}
           </p>
         </div>
       </div>

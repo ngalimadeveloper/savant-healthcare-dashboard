@@ -8,10 +8,10 @@ class PatientNoteBase(BaseModel):
     @field_validator("text")
     @classmethod
     def validate_text_not_blank(cls, value: str) -> str:
-        text = value.strip()
-        if not text:
+        stripped = value.strip()
+        if not stripped:
             raise ValueError("Text cannot be empty")
-        return text
+        return stripped
 
 class PatientNoteResponse(PatientNoteBase):
     id:int
