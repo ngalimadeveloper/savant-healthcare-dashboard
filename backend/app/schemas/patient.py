@@ -5,7 +5,7 @@ from .contact import ContactCreate, ContactResponse, ContactUpdate
 from .address import AddressCreate, AddressResponse, AddressUpdate
 from .allergy import AllergyCreate
 from .condition import ConditionCreate
-from typing import List
+from typing import List, Literal
 
 def get_age(dob:date):
     current = date.today()
@@ -77,7 +77,8 @@ class PatientListQueryParams(BaseModel):
     search: str | None = None
     status: PatientStatus | None = None
     limit: int = Field(default=20, ge=1, le=100)
-    cursor: int | None = Field(default=None, ge=1)
+    offset: int | None = Field(default=None, ge=0)
+    sort_order: Literal["asc", "desc"] = "asc"
 
     @field_validator("search")
     @classmethod

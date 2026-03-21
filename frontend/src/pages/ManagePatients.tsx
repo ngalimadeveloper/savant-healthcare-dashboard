@@ -1,5 +1,5 @@
 // src/pages/ManagePatients.tsx
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useInView } from "react-intersection-observer";
 import { PatientCard } from "@/components/PatientCard";
@@ -14,7 +14,7 @@ export function ManagePatients() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | PatientStatus>("all");
-  const wasInView = useRef(false);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const { ref, inView } = useInView({ rootMargin: "200px" });
 
   useEffect(() => {
@@ -38,14 +38,13 @@ export function ManagePatients() {
   } = usePatientsList({
     search,
     status: statusFilter,
+    sortOrder,
   });
 
   useEffect(() => {
-    const enteredView = inView && !wasInView.current;
-    if (enteredView && hasNextPage && !isFetchingNextPage) {
+    if (inView && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
-    wasInView.current = inView;
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
@@ -65,12 +64,23 @@ export function ManagePatients() {
               <option value="inactive">Inactive</option>
             </select>
           </div>
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">Sort</label>
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
+              className="px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="asc">Name A–Z</option>
+              <option value="desc">Name Z–A</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      {isError ? (
-        <p className="text-center py-12 text-red-600">{errorMessage}</p>
-      ) : patients.length === 0 && !isLoading ? (
+      {isError && <p className="text-center py-3 text-red-600">{errorMessage}</p>}
+
+      {!isError && patients.length === 0 && !isLoading ? (
         <p className="text-center py-12 text-gray-600">No patients found</p>
       ) : (
         <div className="flex flex-col gap-3">

@@ -2,13 +2,14 @@ import { Link } from "react-router-dom";
 import { usePatientStats } from "@/hooks/usePatientStats";
 
 export function Dashboard() {
-	const { data: stats } = usePatientStats();
+	const { data: stats, isError, errorMessage } = usePatientStats();
 
 	return (
 		<section className="min-h-[calc(100vh-10rem)] flex items-center justify-center">
 			<div className="w-full max-w-2xl bg-white border border-gray-200 rounded-lg p-6">
 				<h1 className="text-2xl font-bold text-center text-gray-900">Patients Overview</h1>
 				<p className="mt-2 text-center text-sm text-gray-600">Total includes active and inactive patients only.</p>
+				{isError && <p className="mt-4 text-center text-sm text-red-600">{errorMessage}</p>}
 
 				<div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
 					<div className="border border-gray-200 rounded-md p-3">

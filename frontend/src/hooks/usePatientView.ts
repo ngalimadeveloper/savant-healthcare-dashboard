@@ -13,6 +13,7 @@ export function usePatient(patientId?: string) {
     queryKey: ["patient", patientId],
     enabled: Boolean(patientId),
     queryFn: () => getPatientById(patientId!),
+    staleTime: 30 * 1000,
   });
 
   return {
@@ -26,6 +27,7 @@ export function usePatientSummary(patientId?: string) {
     queryKey: ["patient-summary", patientId],
     enabled: Boolean(patientId),
     queryFn: () => getPatientSummary(patientId!),
+    staleTime: 5 * 60 * 1000,
   });
 
   return {
@@ -47,6 +49,7 @@ export function usePatientNotes(patientId?: string) {
       }),
     getNextPageParam: (lastPage) =>
       lastPage.has_more ? lastPage.next_cursor ?? undefined : undefined,
+    staleTime: 30 * 1000,
   });
 
   const notes = query.data?.pages.flatMap((page) => page.items) ?? [];

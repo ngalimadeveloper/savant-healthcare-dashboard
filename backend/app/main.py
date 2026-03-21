@@ -41,7 +41,7 @@ async def savant_exception_handler(request: Request, exc:SavantAPiException):
 @app.exception_handler(RequestValidationError)
 async def request_validation_error_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
-        status_code = 400,
+        status_code = 422,
         content={"error_info": jsonable_encoder(exc.errors())}
     )
 

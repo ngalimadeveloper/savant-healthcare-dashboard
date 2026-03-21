@@ -37,5 +37,5 @@ class PatientNoteService:
             raise NotFoundException("Patient Note", note_id)
         
         if patient_note.patient_id != patient.id:
-            raise NotAuthorizedException("Patient Note", note_id)
+            raise NotAuthorizedException("Patient Note", note_id, patient_id)
         return self.patient_note_repo.delete_note(patient_note)

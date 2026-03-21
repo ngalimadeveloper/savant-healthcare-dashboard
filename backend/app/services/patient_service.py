@@ -23,7 +23,8 @@ class PatientService:
 
     def get_all_patients(self, query_params: PatientListQueryParams) -> PatientListResponse:
         items, has_more = self.repo.get_all_patients(query_params)
-        next_cursor = items[-1].id if has_more and items else None
+        offset = query_params.offset or 0
+        next_cursor = offset + query_params.limit if has_more else None
         return PatientListResponse(items=items, next_cursor=next_cursor, has_more=has_more)
 
     def get_patient_stats(self) -> PatientStatsResponse:

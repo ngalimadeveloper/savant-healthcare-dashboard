@@ -17,17 +17,17 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps) {
         fixed sm:static inset-y-0 left-0 z-40
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         sm:translate-x-0
-        w-64 h-screen bg-[#0a192f] border-r border-gray-700
+        w-64 sm:w-48 md:w-64 h-screen bg-[#0a192f] border-r border-gray-700
         flex flex-col
       `}
     >
-      <div className="h-16 flex items-center px-6 border-b border-gray-700">
-        <span className="text-xl font-bold text-white tracking-wide">
+      <div className="h-16 flex items-center px-4 md:px-6 border-b border-gray-700">
+        <span className="text-xl font-bold text-white tracking-wide truncate">
           Savant Health
         </span>
       </div>
 
-      <nav className="flex-1 px-4 py-6 space-y-2">
+      <nav className="flex-1 px-2 md:px-4 py-6 space-y-2">
         {isManagePatientsPage && (
           <Link
             to="/patients?add=true"

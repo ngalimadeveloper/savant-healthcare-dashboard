@@ -6,7 +6,7 @@ export function usePatientStats() {
   const query = useQuery({
     queryKey: ["patient-stats"],
     queryFn: getPatientStats,
-    initialData: { total: 0, active: 0, inactive: 0 },
+    initialData: { total: 0, active: 0, inactive: 0, by_status: {} },
   });
 
   return {

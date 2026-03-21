@@ -30,11 +30,14 @@ class PatientRepository:
                     | func.lower(Patient.last_name).like(search_value)
                 )
 
-        if query_params.cursor:
-            query = query.filter(Patient.id > query_params.cursor)
+        sort_col = func.lower(Patient.last_name)
+        if query_params.sort_order == "desc":
+            query = query.order_by(sort_col.desc(), Patient.id.asc())
+        else:
+            query = query.order_by(sort_col.asc(), Patient.id.asc())
 
-        query = query.order_by(Patient.id.asc())
-        rows = query.limit(query_params.limit + 1).all()
+        offset = query_params.offset or 0
+        rows = query.offset(offset).limit(query_params.limit + 1).all()
 
         has_more = len(rows) > query_params.limit
         items = rows[: query_params.limit]
@@ -62,7 +65,7 @@ class PatientRepository:
         }
 
     def get_patient_by_id(self, patient_id:int):
-        return ( 
+        return (
                 self.db.query(Patient)
                 .options(joinedload(Patient.contact), joinedload(Patient.address))
                 .filter(Patient.id == patient_id)
@@ -70,30 +73,24 @@ class PatientRepository:
         )
 
     def get_patient_by_email(self, email:str):
-        return ( 
+        return (
                 self.db.query(Patient)
                 .filter(Patient.contact.has(email=email))
                 .join(Contact, Contact.patient_id == Patient.id)
                 .first()
         )
-    
-    def get_allergies_by_patient_id(self, patient_id:int):
+
+    def get_patient_with_clinical_data(self, patient_id:int):
         return (
             self.db.query(Patient)
-            .options(joinedload(Patient.allergies))
+            .options(
+                joinedload(Patient.allergies),
+                joinedload(Patient.conditions),
+            )
             .filter(Patient.id == patient_id)
             .first()
         )
-    
-    def get_conditions_by_patient_id(self, patient_id:int):
-        return (
-            self.db.query(Patient)
-            .options(joinedload(Patient.conditions))
-            .filter(Patient.id == patient_id)
-            .first()
-        )
-    
-    
+
     def create_patient(self, patient: Patient):
         self.db.add(patient)
         self.db.commit()

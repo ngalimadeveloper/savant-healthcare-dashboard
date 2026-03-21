@@ -20,13 +20,13 @@ class ConflictException(SavantAPiException):
     def __init__(self, resource_type: str, target_resource:int):
         super().__init__(
             status_code=409,
-            error_details = f"{resource_type} with {target_resource} already exists"
+            error_details = f"{resource_type} with ID {target_resource} already exists"
         )
 
 
 # Forbidden
 class NotAuthorizedException(SavantAPiException):
-    def __init__(self, resource_type: str, target_resource:int, patient_id:id):
+    def __init__(self, resource_type: str, target_resource:int, patient_id:int):
         super().__init__(
             status_code=403,
             error_details = f"Forbidden, Patient {patient_id} doesn't own {resource_type} {target_resource} "

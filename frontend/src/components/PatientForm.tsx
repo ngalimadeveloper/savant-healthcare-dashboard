@@ -31,6 +31,7 @@ export function PatientForm({ onClose, onSuccess, patient }: PatientFormProps) {
           middle_name: patient.middle_name || "",
           last_name: patient.last_name,
           dob: patient.dob,
+          status: patient.status,
           blood_type: patient.blood_type || "",
           contact: {
             email: patient.contact.email,
@@ -48,6 +49,7 @@ export function PatientForm({ onClose, onSuccess, patient }: PatientFormProps) {
           conditions: [],
         }
       : {
+          status: "active" as const,
           address: { country: "United States" },
           allergies: [],
           conditions: [],
@@ -109,6 +111,10 @@ export function PatientForm({ onClose, onSuccess, patient }: PatientFormProps) {
           <input {...register("middle_name", { setValueAs: (v) => v === "" ? null : v })} placeholder="Middle Name" className={getInput()} />
           <input {...register("last_name", { required: true })} placeholder="Last Name *" className={getInput(!!errors.last_name)} />
           <input type="date" {...register("dob", { required: true })} max={today} className={getInput(!!errors.dob)} />
+          <select {...register("status", { required: true })} className={getInput(!!errors.status)}>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
 
           <p className={section}>Blood Type</p>
           <select {...register("blood_type", { setValueAs: (v) => v === "" ? null : v })} className={getInput()}>

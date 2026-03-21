@@ -6,21 +6,25 @@ import type { PatientStatus } from "@/interfaces/patient";
 export function usePatientsList({
   search,
   status,
+  sortOrder,
 }: {
   search: string;
   status: "all" | PatientStatus;
+  sortOrder: "asc" | "desc";
 }) {
   const query = useInfiniteQuery({
-    queryKey: ["patients", search, status],
-    initialPageParam: null as number | null,
+    queryKey: ["patients", search, status, sortOrder],
+    initialPageParam: 0,
     queryFn: ({ pageParam }) =>
       getPatientsPage({
-        cursor: pageParam,
+        offset: pageParam,
         search,
         status,
+        sortOrder,
       }),
     getNextPageParam: (lastPage) =>
       lastPage.has_more ? lastPage.next_cursor ?? undefined : undefined,
+    staleTime: 30 * 1000,
   });
 
   const patients = query.data?.pages.flatMap((page) => page.items) ?? [];

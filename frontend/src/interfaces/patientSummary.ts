@@ -1,20 +1,16 @@
-export interface BaseItem {
-  label: string;
-}
-
-export interface AllergyItem extends BaseItem {
+export interface AllergyItem {
   allergy_name: string;
 }
 
-export interface ConditionItem extends BaseItem {
+export interface ConditionItem {
   condition_name: string;
 }
 
 export interface PatientSummary {
   full_name: string;
-  bloodtype: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | null;
   age: number;
+  bloodtype: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | null;
   allergies: AllergyItem[];
   conditions: ConditionItem[];
-  summary: string;
+  notes_summary: string;
 }

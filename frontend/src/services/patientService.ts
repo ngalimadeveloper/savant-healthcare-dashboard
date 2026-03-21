@@ -11,9 +11,10 @@ export type PatientsListResponse = {
 };
 
 export type GetPatientsPageParams = {
-  cursor: number | null;
+  offset: number;
   search: string;
   status: "all" | PatientStatus;
+  sortOrder: "asc" | "desc";
 };
 
 export type PatientNotesListResponse = {
@@ -26,28 +27,24 @@ export type PatientStats = {
   total: number;
   active: number;
   inactive: number;
+  by_status: Record<string, number>;
 };
 
 const API_BASE_URL = "http://localhost:8000/api/v1";
 
 export async function getPatientsPage({
-  cursor,
+  offset,
   search,
   status,
+  sortOrder,
 }: GetPatientsPageParams): Promise<PatientsListResponse> {
   const params = new URLSearchParams();
 
-  if (search) {
-    params.set("search", search);
-  }
-
-  if (status !== "all") {
-    params.set("status", status);
-  }
-
-  if (cursor) {
-    params.set("cursor", String(cursor));
-  }
+  if (search) params.set("search", search);
+  if (status !== "all") params.set("status", status);
+  if (offset) params.set("offset", String(offset));
+  params.set("sort_by", "last_name");
+  params.set("sort_order", sortOrder);
 
   return fetchJson<PatientsListResponse>(
     `${API_BASE_URL}/patients?${params.toString()}`,

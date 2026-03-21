@@ -1,6 +1,4 @@
-from pydantic import BaseModel, Field
-from typing_extensions import Annotated
-from datetime import datetime, date
+from pydantic import BaseModel
 
 
 class ContactBase(BaseModel):
