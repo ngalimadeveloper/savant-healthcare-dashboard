@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from app.repositories.patient_note_repo import PatientNoteRepository
 from app.models.patient_note import PatientNote
 from app.repositories.patient_repo import PatientRepository
-from app.schemas.patient_note import PatientNoteCreate
+from app.schemas.patient_note import PatientNoteCreate, PatientNotesQueryParams, PatientNotesListResponse
 from app.exceptions import NotFoundException, NotAuthorizedException
 
 
@@ -12,11 +12,13 @@ class PatientNoteService:
         self.patient_repo = PatientRepository(db)
         self.patient_note_repo = PatientNoteRepository(db)
     
-    def get_notes_by_patient_id(self, patient_id:int):
+    def get_notes_by_patient_id(self, patient_id:int, query_params: PatientNotesQueryParams) -> PatientNotesListResponse:
         patient = self.patient_repo.get_patient_by_id(patient_id)
         if not patient:
             raise NotFoundException("Patient", patient_id)
-        return self.patient_note_repo.get_notes_by_patient_id(patient_id)
+        items, has_more = self.patient_note_repo.get_notes_by_patient_id(patient_id, query_params)
+        next_cursor = items[-1].id if has_more and items else None
+        return PatientNotesListResponse(items=items, next_cursor=next_cursor, has_more=has_more)
     
     def create_note(self, patient_id:int, note_data:PatientNoteCreate):
         patient = self.patient_repo.get_patient_by_id(patient_id)

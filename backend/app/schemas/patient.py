@@ -26,7 +26,6 @@ class BloodTypeEnum(str, enum.Enum):
 class PatientStatus(str, enum.Enum):
     ACTIVE = "active"
     IN_ACTIVE = "inactive"
-    DECEASED = "deceased"
 
 
 class PatientBase(BaseModel):
@@ -72,6 +71,34 @@ class PatientCreate(PatientBase):
     address:AddressCreate
     allergies:List[AllergyCreate] = []
     conditions: List[ConditionCreate] = []
+
+
+class PatientListQueryParams(BaseModel):
+    search: str | None = None
+    status: PatientStatus | None = None
+    limit: int = Field(default=20, ge=1, le=100)
+    cursor: int | None = Field(default=None, ge=1)
+
+    @field_validator("search")
+    @classmethod
+    def validate_search(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
+
+class PatientListResponse(BaseModel):
+    items: List[PatientResponse]
+    next_cursor: int | None
+    has_more: bool
+
+
+class PatientStatsResponse(BaseModel):
+    total: int
+    active: int
+    inactive: int
+    by_status: dict[str, int]
 
 
 

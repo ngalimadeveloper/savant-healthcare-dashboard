@@ -1,47 +1,66 @@
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from app.models.patient import Patient
 from app.models.contact import Contact
+from app.schemas.patient import PatientListQueryParams
 
-"""
-class PatientResponse(PatientBase):
-    id:int
-    last_visit: datetime
-    created_at:datetime
-    address: AddressResponse
-    contact: ContactResponse
-   
-    @computed_field
-    @property
-    def age(self) -> int:
-        current = date.today()
-        return current.year - self.dob.year - ((current.month, current.day) < (self.dob.month, self.dob.day))
-
-    model_config = {"from_attributes": True}
-
-"""
 
 class PatientRepository:
     def __init__(self, db:Session):
         self.db = db
     
-    def get_all_patients(self):
-        return self.db.query(Patient).all()
-    
-    """
-    Need to optimize the search by name potentially? Would be good to show that it can maybe handle searching across 100,000 or something. 
-    Also need to account for pagination too.
-    """
+    def get_all_patients(self, query_params: PatientListQueryParams):
+        query = self.db.query(Patient).options(
+            joinedload(Patient.address),
+            joinedload(Patient.contact),
+        )
 
-    def search_by_patient_name(self, search_query:str):
-        return ( 
-            self.db.query(Patient)
-            .filter(
-                Patient.first_name.ilike(f"%{search_query}%") |
-                Patient.middle_name.ilike(f"%{search_query}%") |
-                Patient.last_name.ilike(f"%{search_query}%")
-            )
+        if query_params.status:
+            query = query.filter(Patient.status == query_params.status.value)
+        else:
+            query = query.filter(Patient.status.in_(["active", "inactive"]))
+
+        if query_params.search:
+            search_terms = [term for term in query_params.search.lower().split() if term]
+            for term in search_terms:
+                search_value = f"{term}%"
+                query = query.filter(
+                    func.lower(Patient.first_name).like(search_value)
+                    | func.lower(Patient.middle_name).like(search_value)
+                    | func.lower(Patient.last_name).like(search_value)
+                )
+
+        if query_params.cursor:
+            query = query.filter(Patient.id > query_params.cursor)
+
+        query = query.order_by(Patient.id.asc())
+        rows = query.limit(query_params.limit + 1).all()
+
+        has_more = len(rows) > query_params.limit
+        items = rows[: query_params.limit]
+        return items, has_more
+
+    def get_patient_stats(self):
+        grouped_counts = (
+            self.db.query(Patient.status, func.count(Patient.id))
+            .filter(Patient.status.in_(["active", "inactive"]))
+            .group_by(Patient.status)
             .all()
         )
+
+        by_status = {"active": 0, "inactive": 0}
+        for status, count in grouped_counts:
+            by_status[status] = count
+
+        total = sum(by_status.values())
+
+        return {
+            "total": total,
+            "active": by_status["active"],
+            "inactive": by_status["inactive"],
+            "by_status": by_status,
+        }
+
     def get_patient_by_id(self, patient_id:int):
         return ( 
                 self.db.query(Patient)

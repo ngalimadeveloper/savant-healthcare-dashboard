@@ -1,8 +1,8 @@
-"""create_tables
+"""Create tables
 
-Revision ID: a1d856d9fca7
+Revision ID: 4a0276646bf9
 Revises: 
-Create Date: 2026-03-18 17:50:27.192053
+Create Date: 2026-03-20 14:36:36.908427
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'a1d856d9fca7'
+revision: str = '4a0276646bf9'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -31,9 +31,20 @@ def upgrade() -> None:
     sa.Column('status', sa.String(length=10), nullable=False),
     sa.Column('last_visit', sa.Date(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.CheckConstraint("blood_type IS NULL OR blood_type IN ('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-')", name='ck_patients_blood_type_valid'),
+    sa.CheckConstraint("status IN ('active', 'inactive')", name='ck_patients_status_active_inactive'),
+    sa.CheckConstraint('char_length(btrim(first_name)) > 0', name='ck_patients_first_name_not_blank'),
+    sa.CheckConstraint('char_length(btrim(last_name)) > 0', name='ck_patients_last_name_not_blank'),
+    sa.CheckConstraint('dob <= CURRENT_DATE', name='ck_patients_dob_not_future'),
+    sa.CheckConstraint('last_visit IS NULL OR last_visit <= CURRENT_DATE', name='ck_patients_last_visit_not_future'),
+    sa.CheckConstraint('middle_name IS NULL OR char_length(btrim(middle_name)) > 0', name='ck_patients_middle_name_not_blank'),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_index('ix_patients_first_name_lower', 'patients', [sa.literal_column('lower(first_name)')], unique=False)
     op.create_index(op.f('ix_patients_id'), 'patients', ['id'], unique=False)
+    op.create_index('ix_patients_last_name_lower', 'patients', [sa.literal_column('lower(last_name)')], unique=False)
+    op.create_index('ix_patients_middle_name_lower', 'patients', [sa.literal_column('lower(middle_name)')], unique=False)
+    op.create_index('ix_patients_status', 'patients', ['status'], unique=False)
     op.create_table('addresses',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('patient_id', sa.Integer(), nullable=False),
@@ -84,6 +95,7 @@ def upgrade() -> None:
     sa.Column('patient_id', sa.Integer(), nullable=False),
     sa.Column('text', sa.Text(), nullable=False),
     sa.Column('timestamp', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.CheckConstraint('char_length(btrim(text)) > 0', name='ck_patientnotes_text_not_blank'),
     sa.ForeignKeyConstraint(['patient_id'], ['patients.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -104,6 +116,10 @@ def downgrade() -> None:
     op.drop_table('allergies')
     op.drop_index(op.f('ix_addresses_id'), table_name='addresses')
     op.drop_table('addresses')
+    op.drop_index('ix_patients_status', table_name='patients')
+    op.drop_index('ix_patients_middle_name_lower', table_name='patients')
+    op.drop_index('ix_patients_last_name_lower', table_name='patients')
     op.drop_index(op.f('ix_patients_id'), table_name='patients')
+    op.drop_index('ix_patients_first_name_lower', table_name='patients')
     op.drop_table('patients')
     # ### end Alembic commands ###

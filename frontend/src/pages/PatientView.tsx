@@ -1,125 +1,170 @@
 // src/pages/PatientView.tsx
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import type { Patient } from "@/interfaces/patient";
-import type { PatientNote } from "@/interfaces/patientNote";
+import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { useInView } from "react-intersection-observer";
 import { PatientNoteCard } from "@/components/PatientNoteCard";
 import { PatientForm } from "@/components/PatientForm";
-
-const PER_PAGE = 5;
+import { usePatient, usePatientNotes, usePatientSummary } from "@/hooks/usePatientView";
+import { createPatientNote, deletePatientById, deletePatientNote } from "@/services/patientService";
+import { getErrorMessage } from "@/services/apiClient";
 
 export function PatientView() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [notes, setNotes] = useState<PatientNote[]>([]);
-  const [page, setPage] = useState(1);
-  const [showNoteForm, setShowNoteForm] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const [noteText, setNoteText] = useState("");
-  const [showEditForm, setShowEditForm] = useState(false);
+  const [noteError, setNoteError] = useState("");
+  const wasInView = useRef(false);
+  const { ref, inView } = useInView({ rootMargin: "200px" });
+  const action = searchParams.get("action");
+  const showEditForm = action === "edit";
+  const showNoteForm = action === "add-note";
+  const showDeleteModal = action === "delete";
 
-  const fetchPatient = () => {
-    fetch(`http://localhost:8000/api/v1/patients/${id}`)
-      .then((res) => res.json())
-      .then((data) => setPatient(data));
-  };
+  const { data: patient, refetch: refetchPatient } = usePatient(id);
+  const { data: patientSummary, refetch: refetchSummary, isLoading: isLoadingSummary } = usePatientSummary(id);
 
-  const fetchNotes = () => {
-    fetch(`http://localhost:8000/api/v1/patients/${id}/notes`)
-      .then((res) => res.json())
-      .then((data) => setNotes(data));
-  };
+  const {
+    notes,
+    isLoading: isLoadingNotes,
+    isError: notesError,
+    errorMessage: notesErrorMessage,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = usePatientNotes(id);
 
   useEffect(() => {
-    fetchPatient();
-    fetchNotes();
-  }, [id]);
-
-  const deletePatient = async () => {
-    if (!window.confirm("Are you sure you want to delete this patient?")) return;
-    await fetch(`http://localhost:8000/api/v1/patients/${id}`, { method: "DELETE" });
-    navigate("/patients");
-  };
+    const enteredView = inView && !wasInView.current;
+    if (enteredView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+    wasInView.current = inView;
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const addNote = async () => {
-    if (!noteText.trim()) return;
-    await fetch(`http://localhost:8000/api/v1/patients/${id}/notes`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: noteText }),
-    });
+    if (!noteText.trim()) {
+      setNoteError("Note text cannot be empty.");
+      return;
+    }
+
+    setNoteError("");
+    if (!id) return;
+
+    try {
+      await createPatientNote(id, noteText);
+    } catch (error) {
+      setNoteError(getErrorMessage(error, "Could not save note. Please try again."));
+      return;
+    }
+
     setNoteText("");
-    setShowNoteForm(false);
-    fetchNotes();
+    setSearchParams({});
+    queryClient.invalidateQueries({ queryKey: ["patient-notes", id] });
   };
 
   const deleteNote = async (noteId: number) => {
     if (!window.confirm("Are you sure you want to delete this note?")) return;
-    await fetch(`http://localhost:8000/api/v1/patients/${id}/notes/${noteId}`, { method: "DELETE" });
-    fetchNotes();
+    if (!id) return;
+    try {
+      await deletePatientNote(id, noteId);
+    } catch (error) {
+      setNoteError(getErrorMessage(error, "Failed to delete note"));
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["patient-notes", id] });
   };
 
   if (!patient) return <p className="text-gray-600">Loading...</p>;
 
-  const totalPages = Math.ceil(notes.length / PER_PAGE);
-  const start = (page - 1) * PER_PAGE;
-  const visibleNotes = notes.slice(start, start + PER_PAGE);
+  const allergies = patientSummary?.allergies.map((item) => item.allergy_name) ?? [];
+  const conditions = patientSummary?.conditions.map((item) => item.condition_name) ?? [];
+  const fullName = patientSummary?.full_name || `${patient.first_name} ${patient.middle_name ?? ""} ${patient.last_name}`.trim();
+  const age = patientSummary?.age ?? patient.age;
+  const bloodType = patientSummary?.bloodtype ?? "Unknown";
+  const narrativeSummary = isLoadingSummary
+    ? "Generating summary..."
+    : patientSummary?.summary || "Summary will be generated here.";
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h1 className="text-xl font-bold text-gray-900 mb-2">
-            {patient.first_name} {patient.middle_name} {patient.last_name}
-          </h1>
-          <p className="text-sm text-gray-600">ID: {patient.id}</p>
-          <p className="text-sm text-gray-600">{patient.age} years old</p>
-          <p className="text-sm text-gray-600 mb-4">Status: {patient.status}</p>
-          <div className="flex gap-3">
-            <button onClick={() => setShowEditForm(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Edit Patient</button>
-            <button onClick={deletePatient} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700">Delete Patient</button>
+      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+        <h1 className="text-xl font-bold text-gray-900 mb-4">Patient Summary</h1>
+
+        <div className="space-y-1 mb-4">
+          <p className="text-sm text-gray-700"><span className="font-semibold text-gray-900">Name:</span> {fullName}</p>
+          <p className="text-sm text-gray-700"><span className="font-semibold text-gray-900">Age:</span> {age}</p>
+          <p className="text-sm text-gray-700"><span className="font-semibold text-gray-900">Blood Type:</span> {bloodType}</p>
+        </div>
+
+        <div className="mb-4">
+          <h2 className="text-sm font-semibold text-gray-800 mb-1">Summary</h2>
+          <p className="text-sm text-gray-700">{narrativeSummary}</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800 mb-1">Allergies</h3>
+            <p className="text-sm text-gray-600">{allergies.length ? allergies.join(", ") : "None"}</p>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800 mb-1">Conditions</h3>
+            <p className="text-sm text-gray-600">{conditions.length ? conditions.join(", ") : "None"}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Patient Summary</h2>
-          <p className="text-sm text-gray-500 italic">Summary will be generated here.</p>
-        </div>
       </div>
 
       <hr className="border-gray-200 mb-6" />
 
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900">Patient Notes</h2>
-        <button onClick={() => setShowNoteForm(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Add Note</button>
       </div>
 
-      {notes.length === 0 ? (
+      {notesError ? (
+        <p className="text-center py-8 text-red-600">{notesErrorMessage}</p>
+      ) : notes.length === 0 && !isLoadingNotes ? (
         <p className="text-center py-8 text-gray-500">Begin adding notes for this patient</p>
       ) : (
         <div className="flex flex-col gap-3">
-          {visibleNotes.map((note) => (
+          {notes.map((note) => (
             <PatientNoteCard key={note.id} note={note} onDelete={deleteNote} />
           ))}
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div className="flex justify-end gap-2 mt-6">
-          <button onClick={() => setPage(page - 1)} disabled={page === 1} className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:text-gray-400 hover:bg-gray-50">Previous</button>
-          <span className="px-3 py-1.5 text-sm text-gray-600">{page} / {totalPages}</span>
-          <button onClick={() => setPage(page + 1)} disabled={page === totalPages} className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:text-gray-400 hover:bg-gray-50">Next</button>
-        </div>
-      )}
+      <div ref={ref} className="h-6" />
+      {isFetchingNextPage && <p className="text-center mt-4 text-gray-600">Loading more notes...</p>}
 
       {showNoteForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setShowNoteForm(false)} />
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => {
+              setNoteError("");
+              setSearchParams({});
+            }}
+          />
           <div className="relative bg-white rounded-lg w-full max-w-md m-4 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900">Add Note</h3>
-              <button onClick={() => setShowNoteForm(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+              <button
+                onClick={() => {
+                  setNoteError("");
+                  setSearchParams({});
+                }}
+                className="text-gray-400 hover:text-gray-600 text-xl"
+              >
+                ✕
+              </button>
             </div>
+            {noteError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg mb-3 text-sm">
+                {noteError}
+              </div>
+            )}
             <textarea
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
@@ -129,7 +174,10 @@ export function PatientView() {
             />
             <div className="flex gap-3">
               <button onClick={addNote} className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">Save Note</button>
-              <button onClick={() => setShowNoteForm(false)} className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+              <button onClick={() => {
+                setNoteError("");
+                setSearchParams({});
+              }} className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
             </div>
           </div>
         </div>
@@ -138,12 +186,47 @@ export function PatientView() {
       {showEditForm && (
         <PatientForm
           patient={patient}
-          onClose={() => setShowEditForm(false)}
+          onClose={() => {
+            setSearchParams({});
+          }}
           onSuccess={() => {
-            setShowEditForm(false);
-            fetchPatient();
+            setSearchParams({});
+            refetchPatient();
+            refetchSummary();
           }}
         />
+      )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setSearchParams({})} />
+          <div className="relative bg-white rounded-lg w-full max-w-md m-4 p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Patient</h3>
+            <p className="text-sm text-gray-600 mb-6">Are you sure you want to delete this patient?</p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={async () => {
+                  if (!id) {
+                    setSearchParams({});
+                    return;
+                  }
+                  await deletePatientById(id);
+                  navigate("/patients");
+                }}
+                className="px-6 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setSearchParams({})}
+                className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

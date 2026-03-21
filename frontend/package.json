@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.91.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.71.2",
+    "react-intersection-observer": "^10.0.3",
     "react-router-dom": "^7.13.1"
   },
   "devDependencies": {

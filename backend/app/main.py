@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError, HTTPException
+from fastapi.encoders import jsonable_encoder
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from alembic.config import Config
@@ -41,7 +42,7 @@ async def savant_exception_handler(request: Request, exc:SavantAPiException):
 async def request_validation_error_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code = 400,
-        content={"error_info": exc.errors()}
+        content={"error_info": jsonable_encoder(exc.errors())}
     )
 
 @app.exception_handler(HTTPException)

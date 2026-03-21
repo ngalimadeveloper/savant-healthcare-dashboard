@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import type { PatientFormData } from "@/interfaces/patientForm";
 import type { Patient } from "@/interfaces/patient";
+import { useCreatePatient, useUpdatePatient } from "@/hooks/usePatientMutations";
 
 interface PatientFormProps {
   onClose: () => void;
@@ -18,8 +19,10 @@ const section = "text-sm text-gray-500 sm:col-span-2 mt-2";
 export function PatientForm({ onClose, onSuccess, patient }: PatientFormProps) {
   const [serverError, setServerError] = useState("");
   const [formError, setFormError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!patient;
+  const createPatientMutation = useCreatePatient();
+  const updatePatientMutation = useUpdatePatient(patient?.id ?? 0);
+  const isSubmitting = createPatientMutation.isPending || updatePatientMutation.isPending;
 
   const { register, handleSubmit, control, formState: { errors, isDirty } } = useForm<PatientFormData>({
     defaultValues: isEditing
@@ -66,34 +69,14 @@ export function PatientForm({ onClose, onSuccess, patient }: PatientFormProps) {
       return;
     }
 
-    const url = isEditing
-      ? `http://localhost:8000/api/v1/patients/${patient.id}`
-      : "http://localhost:8000/api/v1/patients";
-
-    const method = isEditing ? "PATCH" : "POST";
-
-    setIsSubmitting(true);
     try {
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        if (err && Array.isArray(err.error_info)) {
-          setServerError(err.error_info.map((e: any) => e.msg).join(", "));
-        } else {
-          setServerError(err?.error_info || "Something went wrong. Please try again.");
-        }
-        return;
-      }
-      const result = await res.json();
+      const result = isEditing
+        ? await updatePatientMutation.mutateAsync(data)
+        : await createPatientMutation.mutateAsync(data);
+
       onSuccess(isEditing ? patient.id : result.id);
-    } catch {
-      setServerError("Could not connect to the server. Check your connection and try again.");
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      setServerError(error instanceof Error ? error.message : "Something went wrong. Please try again.");
     }
   };
 
@@ -123,7 +106,7 @@ export function PatientForm({ onClose, onSuccess, patient }: PatientFormProps) {
         <form onSubmit={handleSubmit(onSubmit, onError)} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <p className={section}>Patient Info</p>
           <input {...register("first_name", { required: true })} placeholder="First Name *" className={getInput(!!errors.first_name)} />
-          <input {...register("middle_name")} placeholder="Middle Name" className={getInput()} />
+          <input {...register("middle_name", { setValueAs: (v) => v === "" ? null : v })} placeholder="Middle Name" className={getInput()} />
           <input {...register("last_name", { required: true })} placeholder="Last Name *" className={getInput(!!errors.last_name)} />
           <input type="date" {...register("dob", { required: true })} max={today} className={getInput(!!errors.dob)} />
 
@@ -134,16 +117,33 @@ export function PatientForm({ onClose, onSuccess, patient }: PatientFormProps) {
           </select>
 
           <p className={section}>Contact</p>
-          <input type="email" {...register("contact.email", { required: true, pattern: /\S+@\S+\.\S+/ })} placeholder="Email *" className={getInput(!!errors.contact?.email)} />
-          <input {...register("contact.phone_number", { required: true, pattern: /^[\d\s\-\+\(\)]{7,20}$/ })} placeholder="Phone Number *" className={getInput(!!errors.contact?.phone_number)} />
+          <input
+            type="email"
+            {...register("contact.email", {
+              required: true,
+              pattern: /\S+@\S+\.\S+/,
+              setValueAs: (v) => (typeof v === "string" ? v.trim() : v),
+            })}
+            placeholder="Email *"
+            className={getInput(!!errors.contact?.email)}
+          />
+          <input
+            {...register("contact.phone_number", {
+              required: true,
+              pattern: /^[\d\s\-\+\(\)]{7,15}$/,
+              setValueAs: (v) => (typeof v === "string" ? v.trim() : v),
+            })}
+            placeholder="Phone Number *"
+            className={getInput(!!errors.contact?.phone_number)}
+          />
 
           <p className={section}>Address</p>
           <input {...register("address.street", { required: true })} placeholder="Street *" className={`${getInput(!!errors.address?.street)} sm:col-span-2`} />
-          <input {...register("address.unit_number")} placeholder="Unit Number" className={getInput()} />
+          <input {...register("address.unit_number", { setValueAs: (v) => v === "" ? null : v })} placeholder="Unit Number" className={getInput()} />
           <input {...register("address.city", { required: true })} placeholder="City *" className={getInput(!!errors.address?.city)} />
           <input {...register("address.state", { required: true })} placeholder="State *" className={getInput(!!errors.address?.state)} />
           <input {...register("address.zip_code", { required: true })} placeholder="Zip Code *" className={getInput(!!errors.address?.zip_code)} />
-          <input {...register("address.country")} placeholder="Country" className={getInput()} />
+          <input {...register("address.country", { required: true })} placeholder="Country *" className={getInput(!!errors.address?.country)} />
 
           {!isEditing && (
             <>

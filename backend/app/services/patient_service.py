@@ -1,7 +1,13 @@
 
 from sqlalchemy.orm import Session
 from app.repositories.patient_repo import PatientRepository
-from app.schemas.patient import PatientCreate, PatientUpdate
+from app.schemas.patient import (
+    PatientCreate,
+    PatientUpdate,
+    PatientListQueryParams,
+    PatientListResponse,
+    PatientStatsResponse,
+)
 from app.models.patient import Patient
 from app.models.allergy import Allergy
 from app.models.condition import Condition
@@ -15,14 +21,14 @@ class PatientService:
         self.db = db
         self.repo = PatientRepository(db)
 
-    def get_all_patients(self):
-        return self.repo.get_all_patients()
-    
-    def search_by_patient_name(self, search_query:str):
-        search_query = search_query.strip()
-        if not search_query:
-            return []
-        return self.repo.search_by_patient_name(search_query)
+    def get_all_patients(self, query_params: PatientListQueryParams) -> PatientListResponse:
+        items, has_more = self.repo.get_all_patients(query_params)
+        next_cursor = items[-1].id if has_more and items else None
+        return PatientListResponse(items=items, next_cursor=next_cursor, has_more=has_more)
+
+    def get_patient_stats(self) -> PatientStatsResponse:
+        stats = self.repo.get_patient_stats()
+        return PatientStatsResponse(**stats)
     
     def get_patient_by_id(self, patient_id:int):
         patient = self.repo.get_patient_by_id(patient_id)

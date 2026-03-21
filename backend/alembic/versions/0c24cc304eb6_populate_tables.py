@@ -1,20 +1,20 @@
 """populate tables
 
-Revision ID: 4f10e563cd03
-Revises: a1d856d9fca7
-Create Date: 2026-03-18 17:51:50.546762
+Revision ID: 0c24cc304eb6
+Revises: 4a0276646bf9
+Create Date: 2026-03-20 14:37:19.577875
 
 """
 from typing import Sequence, Union
-from datetime import date, datetime
+from datetime import datetime, date
 
 from alembic import op
 import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '4f10e563cd03'
-down_revision: Union[str, Sequence[str], None] = 'a1d856d9fca7'
+revision: str = '0c24cc304eb6'
+down_revision: Union[str, Sequence[str], None] = '4a0276646bf9'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -138,7 +138,7 @@ def upgrade() -> None:
                 "last_name": "Anderson",
                 "dob": date(1974, 4, 25),
                 "blood_type": "B-",
-                "status": "deceased",
+                "status": "active",
                 "last_visit": datetime(2025, 10, 14, 13, 10),
             },
             {
@@ -341,4 +341,5 @@ def downgrade() -> None:
     op.execute("DELETE from addresses")
     op.execute("DELETE from allergies")
     op.execute("DELETE from patients")
+
 

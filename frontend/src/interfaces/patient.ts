@@ -1,7 +1,7 @@
 
 export type BloodType = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | null;
 
-export type PatientStatus = "active" | "inactive" | "deceased";
+export type PatientStatus = "active" | "inactive";
 
 export interface Address {
   id: number;
