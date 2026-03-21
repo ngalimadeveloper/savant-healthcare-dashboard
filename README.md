@@ -13,7 +13,7 @@ cp backend/.env.example backend/.env
 docker compose up --build -d
 ```
 
-> **Note:** If you have an OpenAI API key, add it to your `backend/.env` file:
+> **Note:** If you have an OpenAI API key if you don't have one the summary service will return fallback message. Add it to your `backend/.env` file if you have it:
 >
 > ```
 > OPENAI_API_KEY=sk-your-key-here
